@@ -3,9 +3,16 @@ import sqlite3
 from PyPDF2 import PdfReader
 import os
 import docx2txt
+
+
+"""
+
+Exercice 1: Feed DWH_PATIENT &  DWH_PATIENT_IPPHIST Tables  
+
+"""
+
 def read_file(file_path):
     return pd.read_excel(file_path)
-
 
 def connect_db(path):
     connect = sqlite3.connect(path)
@@ -35,52 +42,7 @@ df = read_file(r"data/source/export_patient.xlsx")
 # DB connection
 cur = connect_db("data/drwh.db")
 
-# Table creation
-sql_command = """
-CREATE TABLE IF NOT EXISTS DWH_PATIENT
-(
-PATIENT_NUM INTEGER PRIMARY KEY,
-LASTNAME VARCHAR2(100),
-FIRSTNAME VARCHAR2(40),
-BIRTH_DATE DATE,
-SEX VARCHAR2(2),
-MAIDEN_NAME VARCHAR2(81),
-RESIDENCE_ADDRESS VARCHAR2(1000),
-PHONE_NUMBER VARCHAR2(1000),
-ZIP_CODE VARCHAR2(30),
-RESIDENCE_CITY VARCHAR2(200),
-DEATH_DATE DATE,
-RESIDENCE_COUNTRY VARCHAR2(100),
-RESIDENCE_LATITUDE VARCHAR2(300),
-RESIDENCE_LONGITUDE VARCHAR2(300),
-DEATH_CODE VARCHAR2(2),UPDATE_DATE DATE,
-BIRTH_COUNTRY VARCHAR2(100),
-BIRTH_CITY VARCHAR2(100),
-BIRTH_ZIP_CODE VARCHAR2(10),
-BIRTH_LATITUDE FLOAT(126),
-BIRTH_LONGITUDE FLOAT(126),
-UPLOAD_ID INTEGER
-)
-"""
-create_table(cur, sql_command)
-
-
-# Feed database
-colomns = [
-    "NOM",
-    "PRENOM",
-    "DATE_NAISSANCE",
-    "SEXE",
-    "NOM_JEUNE_FILLE",
-    "HOSPITAL_PATIENT_ID",
-    "ADRESSE",
-    "TEL",
-    "CP",
-    "VILLE",
-    "PAYS",
-    "DATE_MORT",
-]
-
+# Feed DWH_PATIENT able
 for index, row in df.iterrows():
     patient_num = row["HOSPITAL_PATIENT_ID"]
     last_name = row["NOM"]
@@ -115,20 +77,6 @@ for index, row in df.iterrows():
         ),
     )
 
-
-# second Table creation
-sql_command = """
-CREATE TABLE IF NOT EXISTS DWH_PATIENT_IPPHIST
-(
-PATIENT_NUM INTEGER,
-HOSPITAL_PATIENT_ID VARCHAR2(100),
-ORIGIN_PATIENT_ID VARCHAR2(40),
-MASTER_PATIENT_ID INTEGER,
-UPLOAD_ID INTEGER
-)
-"""
-create_table(cur, sql_command)
-
 # feed data into DWH_PATIENT_IPPHIST table
 for index, row in df.iterrows():
 
@@ -138,36 +86,12 @@ for index, row in df.iterrows():
     sql_command = "INSERT INTO DWH_PATIENT_IPPHIST (PATIENT_NUM, HOSPITAL_PATIENT_ID) VALUES ( ?, ? )"
     insert_data(cur, sql_command, (patient_num, hospital_patient_id))
 
-# Exercise 2
 
-sql_command = """
-CREATE TABLE IF NOT EXISTS DWH_DOCUMENT
-(
-DOCUMENT_NUM INTEGER NOT NULL,
-PATIENT_NUM INTEGER,
-ENCOUNTER_NUM VARCHAR2(30),
-TITLE VARCHAR2(400),
-DOCUMENT_ORIGIN_CODE VARCHAR2(40),
-DOCUMENT_DATE DATE,
-ID_DOC_SOURCE VARCHAR2(300),
-DOCUMENT_TYPE VARCHAR2(40),
-DISPLAYED_TEXT CLOB,
-AUTHOR VARCHAR2(200),
-UNIT_CODE VARCHAR2(30),
-UNIT_NUM INTEGER,
-DEPARTMENT_NUM INTEGER,
-EXTRACTCONTEXT_DONE_FLAG INTEGER,
-EXTRACTCONCEPT_DONE_FLAG INTEGER,
-ENRGENE_DONE_FLAG INTEGER,
-ENRICHTEXT_DONE_FLAG INTEGER,
-UPDATE_DATE DATE,
-UPLOAD_ID INTEGER,
-PRIMARY KEY (DOCUMENT_NUM)
-)
+
 """
-create_table(cur, sql_command)
+Exercise 2: Feed DWH_DOCUMENT table
 
-#########################
+"""
 def extract_ids(doc_name):
     split_var = doc_name.split("_")
     patient_id = split_var[0]
@@ -185,6 +109,7 @@ def extract_pdf(doc_name):
 def extract_docx(doc_name):
     text = docx2txt.process(f"data/reports/docx/{doc_name}")
     print(text)
+
 
 reports_pdf = os.listdir("data/reports/pdfs")
 report_docx = os.listdir("data/reports/docx")
@@ -204,4 +129,10 @@ for doc in report_docx:
     sql_command = "INSERT INTO DWH_DOCUMENT (DOCUMENT_NUM, DOCUMENT_TYPE, PATIENT_NUM, DISPLAYED_TEXT) VALUES ( ?, ? ,? , ? )"
     insert_data(cur, sql_command, (doc_infos[0], doc_infos[1], doc_infos[2], doc_text))
 
-# print_table(cur,"DWH_DOCUMENT")
+
+"""
+Results
+"""
+print_table(cur,"DWH_PATIENT")
+print_table(cur,"DWH_PATIENT_IPPHIST")
+print_table(cur,"DWH_DOCUMENT")
