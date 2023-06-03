@@ -1,7 +1,8 @@
 import pandas as pd
 import sqlite3
-
-
+from PyPDF2 import PdfReader
+import os
+import docx2txt
 def read_file(file_path):
     return pd.read_excel(file_path)
 
@@ -22,6 +23,11 @@ def insert_data(
 ):
     cur.execute(insert_command, insert_data)
 
+def print_table(cur,table_name):
+    cur.execute(f"SELECT * FROM {table_name}")
+    tables = cur.fetchall()
+    for row in tables:
+        print(row)   
 
 # Load and read excel file
 df = read_file(r"data/source/export_patient.xlsx")
@@ -74,6 +80,7 @@ colomns = [
     "PAYS",
     "DATE_MORT",
 ]
+
 for index, row in df.iterrows():
     patient_num = row["HOSPITAL_PATIENT_ID"]
     last_name = row["NOM"]
@@ -122,7 +129,7 @@ UPLOAD_ID INTEGER
 """
 create_table(cur, sql_command)
 
-# feed data into second table
+# feed data into DWH_PATIENT_IPPHIST table
 for index, row in df.iterrows():
 
     patient_num = row["HOSPITAL_PATIENT_ID"]
@@ -130,3 +137,71 @@ for index, row in df.iterrows():
 
     sql_command = "INSERT INTO DWH_PATIENT_IPPHIST (PATIENT_NUM, HOSPITAL_PATIENT_ID) VALUES ( ?, ? )"
     insert_data(cur, sql_command, (patient_num, hospital_patient_id))
+
+# Exercise 2
+
+sql_command = """
+CREATE TABLE IF NOT EXISTS DWH_DOCUMENT
+(
+DOCUMENT_NUM INTEGER NOT NULL,
+PATIENT_NUM INTEGER,
+ENCOUNTER_NUM VARCHAR2(30),
+TITLE VARCHAR2(400),
+DOCUMENT_ORIGIN_CODE VARCHAR2(40),
+DOCUMENT_DATE DATE,
+ID_DOC_SOURCE VARCHAR2(300),
+DOCUMENT_TYPE VARCHAR2(40),
+DISPLAYED_TEXT CLOB,
+AUTHOR VARCHAR2(200),
+UNIT_CODE VARCHAR2(30),
+UNIT_NUM INTEGER,
+DEPARTMENT_NUM INTEGER,
+EXTRACTCONTEXT_DONE_FLAG INTEGER,
+EXTRACTCONCEPT_DONE_FLAG INTEGER,
+ENRGENE_DONE_FLAG INTEGER,
+ENRICHTEXT_DONE_FLAG INTEGER,
+UPDATE_DATE DATE,
+UPLOAD_ID INTEGER,
+PRIMARY KEY (DOCUMENT_NUM)
+)
+"""
+create_table(cur, sql_command)
+
+#########################
+def extract_ids(doc_name):
+    split_var = doc_name.split("_")
+    patient_id = split_var[0]
+    doc_id = split_var[1].split(".")[0]
+    doc_type = split_var[1].split(".")[1]
+    return (doc_id, doc_type, patient_id)
+
+def extract_pdf(doc_name):
+    reader = PdfReader(f"data/reports/pdfs/{doc_name}")
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text()
+    return text
+
+def extract_docx(doc_name):
+    text = docx2txt.process(f"data/reports/docx/{doc_name}")
+    print(text)
+
+reports_pdf = os.listdir("data/reports/pdfs")
+report_docx = os.listdir("data/reports/docx")
+
+ # Insertion of pdf data into table HOSPITAL_PATIENT
+for doc in reports_pdf:
+    doc_infos = extract_ids(doc)
+    doc_text = extract_pdf(doc)
+    sql_command = "INSERT INTO DWH_DOCUMENT (DOCUMENT_NUM, DOCUMENT_TYPE, PATIENT_NUM, DISPLAYED_TEXT) VALUES ( ?, ? ,? , ? )"
+    insert_data(cur, sql_command, (doc_infos[0], doc_infos[1], doc_infos[2], doc_text))
+
+
+ # Insertion of docx data into table HOSPITAL_PATIENT
+for doc in report_docx:
+    doc_infos = extract_ids(doc)
+    doc_text = extract_docx(doc)
+    sql_command = "INSERT INTO DWH_DOCUMENT (DOCUMENT_NUM, DOCUMENT_TYPE, PATIENT_NUM, DISPLAYED_TEXT) VALUES ( ?, ? ,? , ? )"
+    insert_data(cur, sql_command, (doc_infos[0], doc_infos[1], doc_infos[2], doc_text))
+
+# print_table(cur,"DWH_DOCUMENT")
