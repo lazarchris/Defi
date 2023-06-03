@@ -1,0 +1,5 @@
+bin/
+data/reports/
+lib/
+lib64
+pyvenv.cfg
