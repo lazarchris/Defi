@@ -18,11 +18,8 @@ def insert_data(cur,  insert_command,insert_data,):
 # Load and read excel file
 df = read_file(r'data/source/export_patient.xlsx')
 
-
 # DB connection
 cur = connect_db("data/drwh.db")
-
-
 
 # Table creation
 sql_command = '''
@@ -54,18 +51,6 @@ UPLOAD_ID INTEGER
 create_table(cur, sql_command)
 
 
-
-
-# Fetch all the table names
-cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-tables = cur.fetchall()
-print(tables)
-# # Print the table names
-# for table in tables:
-#     print(table[0])
-# print("welcome to the data world")
-
-
 # Feed database
 colomns =["NOM","PRENOM","DATE_NAISSANCE","SEXE","NOM_JEUNE_FILLE","HOSPITAL_PATIENT_ID","ADRESSE","TEL","CP","VILLE","PAYS","DATE_MORT"]
 for index, row in df.iterrows():
@@ -84,30 +69,6 @@ for index, row in df.iterrows():
 
     sql_command = "INSERT INTO DWH_PATIENT (PATIENT_NUM, LASTNAME, FIRSTNAME, BIRTH_DATE, SEX, MAIDEN_NAME ,RESIDENCE_ADDRESS, PHONE_NUMBER, ZIP_CODE, RESIDENCE_CITY, DEATH_DATE, RESIDENCE_COUNTRY) VALUES ( ?, ?, ?,?,?, ?, ?, ? ,?, ?, ?, ? )"
     insert_data(cur,sql_command,(patient_num, last_name,first_name, birth_date, sex, maiden_name, residence_address, phone_number, zip_code, residence_city, country, date_mort))
-
-
-
-# Fetch all the table names
-cur.execute("SELECT * FROM DWH_PATIENT")
-tables = cur.fetchall()
-
-# Print the table names
-print(tables[0])
-
-
-
-###
-# CREATE TABLE DWH_PATIENT_IPPHIST (
-# PATIENT_NUM INTEGER,
-# HOSPITAL_PATIENT_ID VARCHAR2(100),
-# ORIGIN_PATIENT_ID VARCHAR2(40),
-# MASTER_PATIENT_ID INTEGER,
-# UPLOAD_ID INTEGER
-# );
-
-# DB connection
-#cur = connect_db("data/drwh.db")
-
 
 
 # second Table creation
