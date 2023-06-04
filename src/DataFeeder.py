@@ -16,11 +16,7 @@ def create_table(cursor, create_table_command):
     cursor.execute(create_table_command)
 
 
-def insert_data(
-    cur,
-    insert_command,
-    insert_data,
-):
+def insert_data(cur,insert_command,insert_data):
     cur.execute(insert_command, insert_data)
 
 
